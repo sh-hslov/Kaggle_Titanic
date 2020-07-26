@@ -535,71 +535,7 @@ X_tr, X_vld, y_tr, y_vld = train_test_split(X_train, target_label, test_size=0.3
 # fig.savefig('hist.png', dpi=300)
 # plt.show();
 
-# Pytorch 활용 - CPU 활용
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-class Model(nn.Module):
-
-        def __init__(self):
-            super(Model, self).__init__()
-
-            # Inputs = 5, Outputs = 3, Hidden = 30
-            self.linear_1 = nn.Linear(4, 32)
-            self.linear_2 = nn.Linear(32, 64)
-            self.linear_3 = nn.Linear(64, 32)
-            self.out = nn.Linear(32, 1)
-           
-        def forward(self, x):
-            x = self.linear_1(x)
-            x = nn.ReLU()(x)
-            x = nn.Dropout()(x)
-            x = self.linear_2(x)
-            x = nn.ReLU()(x)
-            x = nn.Dropout()(x)
-            x = self.linear_3(x)
-            x = nn.ReLU()(x)
-            x = nn.Dropout()(x)
-            x = self.out(x)
-            y = nn.Sigmoid()(x)
-            return y
-       
-model = Model()
-
-# criterion = nn.CrossEntropyLoss()
-criterion = nn.BCELoss()
-
-
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-X_tr = torch.from_numpy(X_tr)
-X_vld = torch.from_numpy(X_vld)
-y_tr = torch.from_numpy(y_tr)
-y_vld = torch.from_numpy(y_vld)
-
-for t in range(500):
-    y_pred = model(X_tr.float())
-
-    loss = criterion(y_pred.float(), y_tr.float())
-    
-    optimizer.zero_grad()
-    
-    loss.backward()
-    
-    optimizer.step()
-    
-    model.eval()
-    y_hat = model(X_vld.float())
-    model.train()
-    print(loss, y_vld.data[0], y_hat.data[0,0])    
-    
-    # prediction = y_pred.data.max(1)[1]   # first column has actual prob.
-    # accuracy = prediction.eq(X_vld.data).sum()/1*100
-    # train_accu.append(accuracy)
-    # print('Train Step: {}\tLoss: {:.3f}\tAccuracy: {:.3f}'.format(t, loss.data[0], accuracy))
-
-# # Pytorch 활용 - CUDA 사용
+# # Pytorch 활용 - CPU 활용
 # import torch
 # import torch.nn as nn
 # import torch.optim as optim
@@ -629,14 +565,11 @@ for t in range(500):
 #             y = nn.Sigmoid()(x)
 #             return y
 
-# torch.cuda.is_available()
-
-# cuda = torch.device('cuda')
-
+# def accuracy(pred, y):
+#     preds = pred.round()
+#     return (preds == y).float().mean()
+    
 # model = Model()
-
-# if torch.cuda.is_available():
-#     model = model.cuda()
 
 # # criterion = nn.CrossEntropyLoss()
 # criterion = nn.BCELoss()
@@ -649,12 +582,6 @@ for t in range(500):
 # y_tr = torch.from_numpy(y_tr)
 # y_vld = torch.from_numpy(y_vld)
 
-# if torch.cuda.is_available():
-#     X_tr = X_tr.cuda()
-#     X_vld = X_vld.cuda()
-#     y_tr = y_tr.cuda()
-#     y_vld = y_vld.cuda()
-
 # for t in range(500):
 #     y_pred = model(X_tr.float())
 
@@ -666,16 +593,134 @@ for t in range(500):
     
 #     optimizer.step()
     
-#     model.eval()
-#     y_hat = model(X_vld.float())
-#     model.train()
-#     print(loss, y_vld.data[0], y_hat.data[0,0])    
+#     # model.eval()
+#     # y_hat = model(X_vld.float())
+#     # model.train()
+    
+#     acc = accuracy(y_pred, y_tr)
+#     print("{:2} epoch - cross entropy : {:4.2}, accuracy : {:4.2}".format(
+#         t + 1, loss.detach().item(), acc.detach().item()))
+    
+#     # print(loss, y_vld.data[0], y_hat.data[0,0])    
     
 #     # prediction = y_pred.data.max(1)[1]   # first column has actual prob.
 #     # accuracy = prediction.eq(X_vld.data).sum()/1*100
 #     # train_accu.append(accuracy)
 #     # print('Train Step: {}\tLoss: {:.3f}\tAccuracy: {:.3f}'.format(t, loss.data[0], accuracy))
+
+# Pytorch 활용 - CUDA 사용
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+# class Model(nn.Module):
+
+#         def __init__(self):
+#             super(Model, self).__init__()
+
+#             # Inputs = 5, Outputs = 3, Hidden = 30
+#             self.linear_1 = nn.Linear(4, 32)
+#             self.linear_2 = nn.Linear(32, 64)
+#             self.linear_3 = nn.Linear(64, 32)
+#             self.out = nn.Linear(32, 1)
+           
+#         def forward(self, x):
+#             x = self.linear_1(x)
+#             x = nn.ReLU()(x)
+#             x = nn.Dropout()(x)
+#             x = self.linear_2(x)
+#             x = nn.ReLU()(x)
+#             x = nn.Dropout()(x)
+#             x = self.linear_3(x)
+#             x = nn.ReLU()(x)
+#             x = nn.Dropout()(x)
+#             x = self.out(x)
+#             y = nn.Sigmoid()(x)
+#             return y
+
+def accuracy(pred, y):
+    preds = pred.round()
+    return (preds == y).float().mean()
+
+model = nn.Sequential(
+    nn.Linear(4, 32),
+    nn.ReLU(),
+    nn.Dropout(),
+    nn.Linear(32, 64),
+    nn.ReLU(),
+    nn.Dropout(),
+    nn.Linear(64, 32),
+    nn.ReLU(),
+    nn.Dropout(),
+    nn.Linear(32, 1),
+    nn.Sigmoid(),
+).cuda()
+
+torch.cuda.is_available()
+
+cuda = torch.device('cuda')
+
+# model = Model()
+
+# if torch.cuda.is_available():
+#     model = model.cuda()
+
+# criterion = nn.CrossEntropyLoss()
+criterion = nn.BCELoss()
+
+
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+X_tr = torch.from_numpy(X_tr)
+X_vld = torch.from_numpy(X_vld)
+y_tr = torch.from_numpy(y_tr)
+y_vld = torch.from_numpy(y_vld)
+X_test = torch.from_numpy(X_test)
+
+if torch.cuda.is_available():
+    X_tr = X_tr.cuda()
+    X_vld = X_vld.cuda()
+    y_tr = y_tr.cuda()
+    y_vld = y_vld.cuda()
+    X_test = X_test.cuda()
+epochs = 500;
+
+for t in range(epochs):
+    y_pred = model(X_tr.float())
+
+    loss = criterion(y_pred.float(), y_tr.float())
+    
+    # optimizer.zero_grad()
+    
+    loss.backward()
+    
+    optimizer.step()
+    optimizer.zero_grad()    
+    model.eval()
+    y_hat = model(X_vld.float())
+    model.train()
+    acc = accuracy(y_pred, y_tr)
+    print("{:2} epoch - cross entropy : {:4.2}, accuracy : {:4.2}".format(
+        t + 1, loss.detach().item(), acc.detach().item()))
+    
+    # prediction = y_pred.data.max(1)[1]   # first column has actual prob.
+    # accuracy = prediction.eq(X_vld.data).sum()/1*100
+    # train_accu.append(accuracy)
+    # print('Train Step: {}\tLoss: {:.3f}\tAccuracy: {:.3f}'.format(t, loss.data[0], accuracy))
  
+# # =============================================================================
+# # 제출 준비.Submission 양식에 맞게?
+# # =============================================================================
+
+# submission = pd.read_csv('../Kaggle_Titanic/Data/sample_submission.csv')
+# submission.head()
+
+# model.eval()
+# prediction = model(X_test.float())
+# submission['Survived'] = prediction.cpu().detach().numpy()
+
+# submission.to_csv('../Kaggle_Titanic/Data/GPU_submission.csv', index=False)    
+    
  
 # =============================================================================
 # 사실 현재 feature importance 는 지금 모델에서의 importance 를 나타냅니다. 
